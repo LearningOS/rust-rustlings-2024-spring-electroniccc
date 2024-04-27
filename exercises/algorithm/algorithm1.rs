@@ -2,11 +2,11 @@
 	single linked list merge
 	This problem requires you to merge two ordered singly linked lists into one ordered singly linked list
 */
-// I AM NOT DONE
 
 use std::fmt::{self, Display, Formatter};
 use std::ptr::NonNull;
 use std::vec::*;
+use std::cmp::PartialOrd;
 
 #[derive(Debug)]
 struct Node<T> {
@@ -14,7 +14,7 @@ struct Node<T> {
     next: Option<NonNull<Node<T>>>,
 }
 
-impl<T> Node<T> {
+impl<T: PartialOrd + Clone> Node<T> {
     fn new(t: T) -> Node<T> {
         Node {
             val: t,
@@ -23,19 +23,19 @@ impl<T> Node<T> {
     }
 }
 #[derive(Debug)]
-struct LinkedList<T> {
+struct LinkedList<T: PartialOrd + Clone> {
     length: u32,
     start: Option<NonNull<Node<T>>>,
     end: Option<NonNull<Node<T>>>,
 }
 
-impl<T> Default for LinkedList<T> {
+impl<T: PartialOrd + Clone> Default for LinkedList<T> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<T> LinkedList<T> {
+impl<T: PartialOrd + Clone> LinkedList<T> {
     pub fn new() -> Self {
         Self {
             length: 0,
@@ -69,20 +69,46 @@ impl<T> LinkedList<T> {
             },
         }
     }
-	pub fn merge(list_a:LinkedList<T>,list_b:LinkedList<T>) -> Self
-	{
-		//TODO
-		Self {
-            length: 0,
-            start: None,
-            end: None,
+    pub fn merge(list_a:LinkedList<T>,list_b:LinkedList<T>) -> Self
+    {
+        let mut merged_list = LinkedList::new();
+        let mut cur_a = list_a.start;
+        let mut cur_b = list_b.start;
+
+        while cur_a.is_some() || cur_b.is_some() {
+            match (cur_a, cur_b) {
+                (Some(a_ptr), Some(b_ptr)) => {
+                    let a_val = unsafe { &(*a_ptr.as_ptr()).val };
+                    let b_val = unsafe { &(*b_ptr.as_ptr()).val };
+                    if a_val < b_val {
+                        merged_list.add(a_val.clone());
+                        cur_a = unsafe { (*a_ptr.as_ptr()).next };
+                    } else {
+                        merged_list.add(b_val.clone());
+                        cur_b = unsafe { (*b_ptr.as_ptr()).next };
+                    }
+                },
+                (Some(a_ptr), None) => {
+                    let a_val = unsafe { &(*a_ptr.as_ptr()).val };
+                    merged_list.add(a_val.clone());
+                    cur_a = unsafe { (*a_ptr.as_ptr()).next };
+                },
+                (None, Some(b_ptr)) => {
+                    let b_val = unsafe { &(*b_ptr.as_ptr()).val };
+                    merged_list.add(b_val.clone());
+                    cur_b = unsafe { (*b_ptr.as_ptr()).next };
+                },
+                (None, None) => {}
+            }
         }
-	}
+
+        merged_list
+    }
 }
 
 impl<T> Display for LinkedList<T>
 where
-    T: Display,
+    T: Display + PartialOrd + Clone,
 {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self.start {
